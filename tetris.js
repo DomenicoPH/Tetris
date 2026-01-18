@@ -27,6 +27,12 @@ const COLORS = {
 
 // Color de fondo
 const BG_COLOR = "#000"
+const TEXT_COLOR = "#8d8d8d"
+
+// Score
+let score = 0;
+let level = 1;
+let lines = 0;
 
 // Tetrominos (matrices). 1 = Celda ocupada / 0 = Celda vacía
 const TETROMINOS = {
@@ -232,6 +238,47 @@ function clearLines(){
     return linesCleared;
 }
 
+// --- Actualizar score ---
+function updateScore(cleared){
+    if(cleared > 0){
+        const points = [0, 100, 300, 500, 800];
+        score += points[cleared];
+        lines += cleared;
+
+        //subir nivel cada 10 líneas
+        if(lines >= level * 10){
+            level++;
+            // aunmentar velocidad
+            dropInterval = Math.max(100, dropInterval - 50);
+        }
+    }
+}
+
+// --- Mostrar score y level ---
+function drawHUD(){
+    ctx.fillStyle = TEXT_COLOR;
+    ctx.font = "12px 'Press Start 2P'";
+    ctx.fillText(`Score: ${score}`, 310, 25);
+    ctx.fillText(`Level: ${level}`, 310, 50);
+    ctx.fillText(`Lines: ${lines}`, 310, 75);
+}
+
+// --- Game Over ---
+function resetGame(){
+    // limpiar tablero
+    for(let y = 0; y < ROWS; y++) board[y].fill(0);
+    
+    // Reset de variables
+    score = 0;
+    level = 1;
+    lines = 0;
+    dropInterval = 500;
+    lastDrop = 0;
+
+    // Nueva pieza
+    active = spawnPiece();
+}
+
 // --- Bucle principal ---
 function update(timestamp){
     if(!lastDrop) lastDrop = timestamp;
@@ -248,15 +295,14 @@ function update(timestamp){
             const cleared = clearLines(); // eliminar líneas
             if(cleared > 0){
                 console.log(`Eliminaste ${cleared} línea(s)`);
-                // Puntaje aquí
+                updateScore(cleared);
             }
             
             active = spawnPiece();
             // Game Over básico: si colisiona al aparecer
             if(collides(active, active.x, active.y)){
-                // reinicio simple
-                for(let y = 0; y < ROWS; y++) board[y].fill(0);
-                active = spawnPiece();
+                // reset game
+                resetGame();                
             }
         }
         lastDrop = timestamp;
@@ -266,6 +312,7 @@ function update(timestamp){
     clearCanvas();
     drawBoard();
     drawPiece(active);
+    drawHUD();
     requestAnimationFrame(update);
 
 };
