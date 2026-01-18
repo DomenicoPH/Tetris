@@ -127,6 +127,9 @@ document.addEventListener("keydown", e => {
                 active.shape = rotated;
             }
             break;
+        case " ":
+            hardDrop();
+            break;
     }
 })
 
@@ -142,6 +145,22 @@ function rotateMatrix(matrix){
         }
     }
     return result;
+};
+
+// Descenso rápido de la pieza (función de control)
+function hardDrop(){
+    while(!collides(active, active.x, active.y + 1)){
+        active.y++;
+    }
+    lockPiece(active);
+    const cleared = clearLines();
+    if(cleared > 0){
+        updateScore(cleared);
+    };
+    active = spawnPiece();
+    if(collides(active, active.x, active.y)){
+        resetGame();
+    }
 };
 
 
