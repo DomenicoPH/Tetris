@@ -14,7 +14,7 @@ const ctx = canvas.getContext('2d');
 const board = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
 
 // Paleta de colores por ID de pieza
-const COLORS = {
+const COLORS_BASIC = {
     0: "#111",
     1: "#00FFFF",
     2: "#FFFF00",
@@ -25,6 +25,17 @@ const COLORS = {
     7: "#FFA500",
 };
 
+const COLORS = {
+    0: "#1a1a1a",   // fondo oscuro
+    1: "#4dd0e1",   // turquesa suave (I)
+    2: "#f9a825",   // amarillo mostaza cálido (O)
+    3: "#ab47bc",   // violeta pastel (T)
+    4: "#66bb6a",   // verde fresco (S)
+    5: "#ef5350",   // rojo coral (Z)
+    6: "#5c6bc0",   // azul lavanda (J)
+    7: "#ff7043",   // naranja suave (L)
+};
+
 // Color de fondo
 const BG_COLOR = "#000"
 const TEXT_COLOR = "#8d8d8d"
@@ -33,6 +44,10 @@ const TEXT_COLOR = "#8d8d8d"
 let score = 0;
 let level = 1;
 let lines = 0;
+
+// Flags: estado del juego
+let isGameOver = false;
+let isPaused = false;
 
 // Tetrominos (matrices). 1 = Celda ocupada / 0 = Celda vacía
 const TETROMINOS = {
@@ -96,6 +111,7 @@ const TETROMINOS = {
 
 // Pieza activa (posición y forma)
 let active = spawnPiece();
+let next = spawnPiece();
 
 // Gravedad
 let dropInterval = 500 //ms
@@ -105,6 +121,28 @@ let lastDrop = 0;
 // --- Controles --- // -------------------------------------------------
 
 document.addEventListener("keydown", e => {
+
+    const key = e.key.toLowerCase();
+
+    // reset
+    if(isGameOver && key === "r"){
+        resetGame();
+        requestAnimationFrame(update);
+        return;
+    };
+
+    // pause
+    if(key === "p"){
+        isPaused = !isPaused;
+        if(!isPaused){
+            lastDrop = performance.now();
+        }
+        return;
+    };
+
+    if(isPaused || isGameOver) return;
+
+    // controls
     switch(e.key){
         case "ArrowLeft":
             if(!collides(active, active.x - 1, active.y)){
@@ -131,7 +169,7 @@ document.addEventListener("keydown", e => {
             hardDrop();
             break;
     }
-})
+});
 
 // ----------------------------------------------------------------------
 
@@ -157,9 +195,10 @@ function hardDrop(){
     if(cleared > 0){
         updateScore(cleared);
     };
-    active = spawnPiece();
+    active = next;
+    next = spawnPiece();
     if(collides(active, active.x, active.y)){
-        resetGame();
+        isGameOver = true;
     }
 };
 
@@ -282,6 +321,24 @@ function drawHUD(){
     ctx.fillText(`Lines: ${lines}`, 310, 75);
 }
 
+// --- Dibujar próxima pieza ---
+function drawNext(){
+    ctx.fillStyle = TEXT_COLOR;
+    ctx.font = "12px 'Press Start 2P'";
+    ctx.fillText("Next:", 310, 110);
+
+    const { shape, id } = next;
+    for(let r = 0; r < shape.length; r++){
+        for(let c = 0; c < shape[r].length; c++){
+            if(shape[r][c]){
+                const offsetX = 315 / CELL;
+                const offsetY = 5;
+                drawCell(offsetX + c, offsetY + r, id);
+            }
+        }
+    }
+}
+
 // --- Game Over ---
 function resetGame(){
     // limpiar tablero
@@ -296,6 +353,35 @@ function resetGame(){
 
     // Nueva pieza
     active = spawnPiece();
+    next = spawnPiece();
+
+    isGameOver = false;
+}
+
+// --- Dibujar Game Over ---
+function drawGameOver(){
+    ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = "#FF0000";
+    ctx.font = "24px 'Press Start 2P'";
+    ctx.fillText("GAME OVER", 45, 250);
+    
+    ctx.font = "14px 'Press Start 2P'";
+    ctx.fillText("Press R to Restart", 30, 290);
+};
+
+// --- Dibujar Pausa ---
+function drawPaused(){
+    ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = "#FFFF00";
+    ctx.font = "24px 'Press Start 2P'";
+    ctx.fillText("PAUSED", 85, 280);
+
+    ctx.font = "14px 'Press Start 2P'";
+    ctx.fillText("Press P to Resume", 40, 310);
 }
 
 // --- Bucle principal ---
@@ -303,6 +389,27 @@ function update(timestamp){
     if(!lastDrop) lastDrop = timestamp;
     const delta = timestamp - lastDrop;
 
+    // render
+    clearCanvas();
+    drawBoard();
+    drawPiece(active);
+    drawHUD();
+    drawNext();
+    
+    // Si Game Over...
+    if(isGameOver){
+        drawGameOver();
+        return;
+    };
+
+    // Si Paused...
+    if(isPaused){
+        drawPaused();
+        requestAnimationFrame(update);
+        return;
+    };
+
+    // lógica de caída normal
     if(delta >= dropInterval){
         // intentar bajar
         if(!collides(active, active.x, active.y + 1)){
@@ -317,23 +424,17 @@ function update(timestamp){
                 updateScore(cleared);
             }
             
-            active = spawnPiece();
+            active = next;
+            next = spawnPiece();
             // Game Over básico: si colisiona al aparecer
             if(collides(active, active.x, active.y)){
                 // reset game
-                resetGame();                
+                isGameOver = true;             
             }
         }
         lastDrop = timestamp;
     }
-
-    // render
-    clearCanvas();
-    drawBoard();
-    drawPiece(active);
-    drawHUD();
     requestAnimationFrame(update);
-
 };
 
 requestAnimationFrame(update);
