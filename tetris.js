@@ -195,9 +195,13 @@ function rotateMatrix(matrix){
 
 // Descenso rápido de la pieza (función de control)
 function hardDrop(){
+    let droppedCells = 0;
     while(!collides(active, active.x, active.y + 1)){
         active.y++;
+        droppedCells++;
     }
+    score += droppedCells * 2
+
     lockPiece(active);
     const cleared = clearLines();
     if(cleared > 0){
@@ -423,10 +427,12 @@ function update(timestamp){
         // intentar bajar
         if(!collides(active, active.x, active.y + 1)){
             active.y++;
+            if(isSoftDropping){
+                score += 1
+            }
         } else {
             // fijar y spawnear nueva
             lockPiece(active);
-
             const cleared = clearLines(); // eliminar líneas
             if(cleared > 0){
                 console.log(`Eliminaste ${cleared} línea(s)`);
