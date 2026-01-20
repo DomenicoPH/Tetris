@@ -48,6 +48,7 @@ let lines = 0;
 // Flags: estado del juego
 let isGameOver = false;
 let isPaused = false;
+let isSoftDropping = false;
 
 // Tetrominos (matrices). 1 = Celda ocupada / 0 = Celda vacía
 const TETROMINOS = {
@@ -156,7 +157,8 @@ document.addEventListener("keydown", e => {
             break;
         case "ArrowDown":
             if(!collides(active, active.x, active.y + 1)){
-                active.y++;
+                //active.y++;
+                isSoftDropping = true;
             }
             break;
         case "ArrowUp":
@@ -168,6 +170,12 @@ document.addEventListener("keydown", e => {
         case " ":
             hardDrop();
             break;
+    }
+});
+
+document.addEventListener('keyup', e => {
+    if(e.key === "ArrowDown"){
+        isSoftDropping = false;
     }
 });
 
@@ -409,8 +417,9 @@ function update(timestamp){
         return;
     };
 
-    // lógica de caída normal
-    if(delta >= dropInterval){
+    // lógica de caída normal o acelerada
+    const currentInterval = isSoftDropping ? 50 : dropInterval;
+    if(delta >= currentInterval){
         // intentar bajar
         if(!collides(active, active.x, active.y + 1)){
             active.y++;
