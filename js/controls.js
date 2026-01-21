@@ -39,7 +39,7 @@ function hardDrop({ board, getActive, setActive, getNext, setNext, spawnPiece, C
   }
 }
 
-// --- Setup de controles ---
+// --- Setup de controles de teclado ---
 export function setupControls({
   board,
   getActive, setActive,
@@ -135,10 +135,11 @@ export function setupTouchControls({
   let startX = 0;
   let startY = 0;
   let lastTapTime = 0;
+  let tapTimer = null;
   let longPressTimer = null;
   let softDropActive = false;
   let gestureUsed = false;
-  let doubleTapTriggered = false;
+
   const SWIPE_THRESHOLD = 30;
   const DOUBLE_TAP_MS = 250;
   const LONG_PRESS_MS = 500;
@@ -146,27 +147,32 @@ export function setupTouchControls({
   function doHardDrop(){
     let active = getActive();
     let next = getNext();
-
     let droppedCells = 0;
     while(!collides(board, active, active.x, active.y + 1)){
       active.y++;
       droppedCells++;
     }
     addScore(droppedCells * 2);
-
     lockPiece(board, active);
     const cleared = clearLines(board);
     if(cleared > 0) updateScore(cleared);
-
     active = next;
     next = spawnPiece(COLS);
     setActive(active);
     setNext(next);
-
     if(collides(board, active, active.x, active.y)){
       setGameOver(true);
     }
-  };
+  }
+
+  function rotatePiece(){
+    let active = getActive();
+    const rotated = rotateMatrix(active.shape);
+    if(!collides(board, active, active.x, active.y, rotated)){
+      active.shape = rotated;
+      setActive(active);
+    }
+  }
 
   function onPointerDown(e){
     if(getIsGameOver() || getIsPaused()) return;
@@ -175,16 +181,26 @@ export function setupTouchControls({
     startX = e.clientX - rect.left;
     startY = e.clientY - rect.top;
 
-    // doble toque
     const now = performance.now();
+
     if(now - lastTapTime <= DOUBLE_TAP_MS){
+      // segundo tap → hard drop
+      clearTimeout(tapTimer); // cancelar rotación pendiente
       doHardDrop();
-      doubleTapTriggered = true;
       lastTapTime = 0;
       e.preventDefault();
       return;
     }
+
+    // primer tap → esperar posible segundo
     lastTapTime = now;
+    clearTimeout(tapTimer);
+    tapTimer = setTimeout(() => {
+      // si no hubo segundo tap → rotar
+      if(!getIsPaused() && !gestureUsed){
+        rotatePiece();
+      }
+    }, DOUBLE_TAP_MS);
 
     // toque largo: Pausa
     clearTimeout(longPressTimer);
@@ -194,16 +210,14 @@ export function setupTouchControls({
 
     softDropActive = false;
     gestureUsed = false;
-  };
+  }
 
   function onPointerMove(e){
     if(getIsGameOver() || getIsPaused()) return;
 
     const rect = canvas.getBoundingClientRect();
-    
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-
     const dx = x - startX;
     const dy = y - startY;
 
@@ -215,17 +229,14 @@ export function setupTouchControls({
     if(Math.abs(dx) >= SWIPE_THRESHOLD && Math.abs(dx) > Math.abs(dy)){
       if(dx < 0){
         if(!collides(board, active, active.x - 1, active.y)){
-          active.x--;
-          setActive(active);
+          active.x--; setActive(active);
         }
       } else {
         if(!collides(board, active, active.x + 1, active.y)){
-          active.x++;
-          setActive(active);
+          active.x++; setActive(active);
         }
       }
-      startX = x;
-      startY = y;
+      startX = x; startY = y;
       gestureUsed = true;
       e.preventDefault();
       return;
@@ -248,37 +259,9 @@ export function setupTouchControls({
   }
 
   function onPointerUp(e){
-    
     if(getIsGameOver()) return;
     clearTimeout(longPressTimer);
 
-    if(doubleTapTriggered){
-      doubleTapTriggered = false;
-    } else {
-      const rect = canvas.getBoundingClientRect();
-      const endX = e.clientX - rect.left;
-      const endY = e.clientY - rect.top;
-      const dx = endX - startX;
-      const dy = endY - startY;
-      const wasSwipe = Math.abs(dx) >= SWIPE_THRESHOLD || Math.abs(dy) >= SWIPE_THRESHOLD;
-
-      if(!gestureUsed && !wasSwipe && !getIsPaused()){
-        let active = getActive();
-        const rotated = rotateMatrix(active.shape);
-        if(!collides(board, active, active.x, active.y, rotated)){
-          active.shape = rotated;
-          setActive(active);
-        }
-      };
-
-      if(softDropActive){
-        setFlags("softDropOff");
-        softDropActive = false;
-      };
-
-    };
-
-    // Al soltar se desactiva soft drop (si estaba activo)
     if(softDropActive){
       setFlags("softDropOff");
       softDropActive = false;
@@ -287,7 +270,7 @@ export function setupTouchControls({
     gestureUsed = false;
   }
 
-  // Pointer Events: soporta mouse y tactil
+  // Pointer Events: soporta mouse y táctil
   canvas.style.touchAction = "none";
   canvas.addEventListener("pointerdown", onPointerDown, {passive: false});
   canvas.addEventListener("pointermove", onPointerMove, {passive: false});
