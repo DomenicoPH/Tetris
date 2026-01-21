@@ -135,8 +135,11 @@ export function setupTouchControls({
   let startX = 0;
   let startY = 0;
   let longPressTimer = null;
+
   let softDropActive = false;
   let gestureUsed = false;
+  let pointerActive = false;   // puntero presionado
+  let didHardDrop = false;     // ya hicimos hard drop en este gesto
 
   const SWIPE_THRESHOLD = 30;        // umbral para swipe corto (soft drop / lateral)
   const SWIPE_DROP_THRESHOLD = 100;  // umbral para hard drop
@@ -174,9 +177,13 @@ export function setupTouchControls({
 
   function onPointerDown(e){
     if(getIsGameOver() || getIsPaused()) return;
+
     const rect = canvas.getBoundingClientRect();
     startX = e.clientX - rect.left;
     startY = e.clientY - rect.top;
+
+    pointerActive = true;
+    didHardDrop = false;       // nuevo gesto → permitir un hard drop
 
     // toque largo: Pausa
     clearTimeout(longPressTimer);
@@ -189,7 +196,7 @@ export function setupTouchControls({
   }
 
   function onPointerMove(e){
-    if(getIsGameOver() || getIsPaused()) return;
+    if(!pointerActive || getIsGameOver() || getIsPaused()) return;
 
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -212,40 +219,56 @@ export function setupTouchControls({
           active.x++; setActive(active);
         }
       }
-      startX = x; startY = y;
+      startX = x; startY = y;       // reiniciar origen para evitar acumulación
       gestureUsed = true;
       e.preventDefault();
       return;
     }
 
     // swipe vertical
-    if(dy >= SWIPE_DROP_THRESHOLD && Math.abs(dy) > Math.abs(dx)){
-      // swipe largo hacia abajo → hard drop
-      doHardDrop();
-      gestureUsed = true;
-      e.preventDefault();
-    } else if(dy >= SWIPE_THRESHOLD && Math.abs(dy) > Math.abs(dx)){
-      // swipe corto hacia abajo → soft drop
-      if(!softDropActive){
-        setFlags("softDropOn");
-        softDropActive = true;
+    if(Math.abs(dy) > Math.abs(dx)){
+      // hard drop: solo si aún no se hizo en este gesto
+      if(dy >= SWIPE_DROP_THRESHOLD && !didHardDrop){
+        doHardDrop();
+        didHardDrop = true;         // bloquear nuevos hard drops hasta próximo pointerdown
+        gestureUsed = true;
+
+        // apagar soft drop y reiniciar origen para no acumular más dy
+        if(softDropActive){
+          setFlags("softDropOff");
+          softDropActive = false;
+        }
+        startX = x; startY = y;
+        e.preventDefault();
+        return;
       }
-      gestureUsed = true;
-      e.preventDefault();
-    } else {
-      if(softDropActive){
-        setFlags("softDropOff");
-        softDropActive = false;
+
+      // soft drop (swipe corto hacia abajo)
+      if(dy >= SWIPE_THRESHOLD && !didHardDrop){
+        if(!softDropActive){
+          setFlags("softDropOn");
+          softDropActive = true;
+        }
+        gestureUsed = true;
+        e.preventDefault();
+        return;
       }
+    }
+
+    // si no cumple umbrales, apagar soft drop
+    if(softDropActive){
+      setFlags("softDropOff");
+      softDropActive = false;
     }
   }
 
   function onPointerUp(e){
-    if(getIsGameOver()) return;
+    if(!pointerActive || getIsGameOver()) return;
+    pointerActive = false;
     clearTimeout(longPressTimer);
 
-    // si no hubo swipe → rotar
-    if(!gestureUsed && !getIsPaused()){
+    // si no hubo swipe ni hard drop → rotar
+    if(!gestureUsed && !didHardDrop && !getIsPaused()){
       rotatePiece();
     }
 
@@ -255,6 +278,19 @@ export function setupTouchControls({
     }
 
     gestureUsed = false;
+    didHardDrop = false; // por seguridad, aunque se resetea en pointerdown
+  }
+
+  function onPointerCancel(e){
+    // cancelar gesto en curso
+    pointerActive = false;
+    clearTimeout(longPressTimer);
+    if(softDropActive){
+      setFlags("softDropOff");
+      softDropActive = false;
+    }
+    gestureUsed = false;
+    didHardDrop = false;
   }
 
   // Pointer Events: soporta mouse y táctil
@@ -262,5 +298,5 @@ export function setupTouchControls({
   canvas.addEventListener("pointerdown", onPointerDown, {passive: false});
   canvas.addEventListener("pointermove", onPointerMove, {passive: false});
   canvas.addEventListener("pointerup", onPointerUp, {passive: false});
-  canvas.addEventListener("pointercancel", onPointerUp, {passive: false});
+  canvas.addEventListener("pointercancel", onPointerCancel, {passive: false});
 }
