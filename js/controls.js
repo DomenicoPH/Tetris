@@ -134,38 +134,30 @@ export function setupTouchControls({
 }){
   let startX = 0;
   let startY = 0;
-
-  let lastTapTime = 0;
-  let rotateTimeoutId = null;     // rotación diferida del primer tap
   let longPressTimer = null;
-
   let softDropActive = false;
   let gestureUsed = false;
 
-  const SWIPE_THRESHOLD = 30;
-  const DOUBLE_TAP_MS = 200;      // ventana más ágil para evitar hard drops accidentales
+  const SWIPE_THRESHOLD = 30;        // umbral para swipe corto (soft drop / lateral)
+  const SWIPE_DROP_THRESHOLD = 100;  // umbral para hard drop
   const LONG_PRESS_MS = 500;
 
   function doHardDrop(){
     let active = getActive();
     let next = getNext();
-
     let droppedCells = 0;
     while(!collides(board, active, active.x, active.y + 1)){
       active.y++;
       droppedCells++;
     }
     addScore(droppedCells * 2);
-
     lockPiece(board, active);
     const cleared = clearLines(board);
     if(cleared > 0) updateScore(cleared);
-
     active = next;
     next = spawnPiece(COLS);
     setActive(active);
     setNext(next);
-
     if(collides(board, active, active.x, active.y)){
       setGameOver(true);
     }
@@ -182,7 +174,6 @@ export function setupTouchControls({
 
   function onPointerDown(e){
     if(getIsGameOver() || getIsPaused()) return;
-
     const rect = canvas.getBoundingClientRect();
     startX = e.clientX - rect.left;
     startY = e.clientY - rect.top;
@@ -227,8 +218,14 @@ export function setupTouchControls({
       return;
     }
 
-    // swipe vertical (soft drop mientras se arrastra hacia abajo)
-    if(dy >= SWIPE_THRESHOLD && Math.abs(dy) > Math.abs(dx)){
+    // swipe vertical
+    if(dy >= SWIPE_DROP_THRESHOLD && Math.abs(dy) > Math.abs(dx)){
+      // swipe largo hacia abajo → hard drop
+      doHardDrop();
+      gestureUsed = true;
+      e.preventDefault();
+    } else if(dy >= SWIPE_THRESHOLD && Math.abs(dy) > Math.abs(dx)){
+      // swipe corto hacia abajo → soft drop
       if(!softDropActive){
         setFlags("softDropOn");
         softDropActive = true;
@@ -247,36 +244,11 @@ export function setupTouchControls({
     if(getIsGameOver()) return;
     clearTimeout(longPressTimer);
 
-    const now = performance.now();
-    const delta = now - lastTapTime;
-    const isDoubleTap = delta > 0 && delta <= DOUBLE_TAP_MS;
-
-    if(isDoubleTap){
-      // cancelar rotación diferida del primer tap
-      if(rotateTimeoutId){
-        clearTimeout(rotateTimeoutId);
-        rotateTimeoutId = null;
-      }
-      // ejecutar hard drop
-      doHardDrop();
-      lastTapTime = 0; // reset para evitar triple tap ambiguo
-    } else {
-      // primer tap: programar rotación diferida
-      lastTapTime = now;
-
-      // si hubo swipe/soft drop, no rotamos
-      if(!getIsPaused() && !gestureUsed){
-        // programar rotación; si llega segundo tap dentro de la ventana, se cancela
-        rotateTimeoutId = setTimeout(() => {
-          rotatePiece();
-          rotateTimeoutId = null;
-          // tras ejecutar la rotación, reseteamos el lastTapTime para que el siguiente tap sea "primer tap"
-          lastTapTime = 0;
-        }, DOUBLE_TAP_MS);
-      }
+    // si no hubo swipe → rotar
+    if(!gestureUsed && !getIsPaused()){
+      rotatePiece();
     }
 
-    // al soltar, apagar soft drop si estaba activo
     if(softDropActive){
       setFlags("softDropOff");
       softDropActive = false;
