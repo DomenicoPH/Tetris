@@ -137,6 +137,7 @@ export function setupTouchControls({
   let lastTapTime = 0;
   let longPressTimer = null;
   let softDropActive = false;
+  let gesturedUsed = false;
   const SWIPE_THRESHOLD = 30;
   const DOUBLE_TAP_MS = 250;
   const LONG_PRESS_MS = 500;
@@ -190,6 +191,7 @@ export function setupTouchControls({
     }, LONG_PRESS_MS);
 
     softDropActive = false;
+    gesturedUsed = false;
   };
 
   function onPointerMove(e){
@@ -222,6 +224,7 @@ export function setupTouchControls({
       }
       startX = x;
       startY = y;
+      gesturedUsed = true;
       e.preventDefault();
       return;
     }
@@ -232,6 +235,7 @@ export function setupTouchControls({
         setFlags("softDropOn");
         softDropActive = true;
       }
+      gesturedUsed = true;
       e.preventDefault();
     } else {
       if(softDropActive){
@@ -254,7 +258,7 @@ export function setupTouchControls({
 
     const wasSwipe = Math.abs(dx) >= SWIPE_THRESHOLD || Math.abs(dy) >= SWIPE_THRESHOLD;
 
-    if(!wasSwipe && !getIsPaused()){
+    if(!gesturedUsed && !wasSwipe && !getIsPaused()){
       let active = getActive();
       const rotated = rotateMatrix(active.shape);
       if(!collides(board, active, active.x, active.y, rotated)){
@@ -268,6 +272,8 @@ export function setupTouchControls({
       setFlags("softDropOff");
       softDropActive = false;
     }
+
+    gesturedUsed = false;
   }
 
   // Pointer Events: soporta mouse y tactil
