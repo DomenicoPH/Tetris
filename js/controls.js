@@ -137,7 +137,7 @@ export function setupTouchControls({
   let lastTapTime = 0;
   let longPressTimer = null;
   let softDropActive = false;
-  let gesturedUsed = false;
+  let gestureUsed = false;
   let doubleTapTriggered = false;
   const SWIPE_THRESHOLD = 30;
   const DOUBLE_TAP_MS = 250;
@@ -193,7 +193,7 @@ export function setupTouchControls({
     }, LONG_PRESS_MS);
 
     softDropActive = false;
-    gesturedUsed = false;
+    gestureUsed = false;
   };
 
   function onPointerMove(e){
@@ -226,7 +226,7 @@ export function setupTouchControls({
       }
       startX = x;
       startY = y;
-      gesturedUsed = true;
+      gestureUsed = true;
       e.preventDefault();
       return;
     }
@@ -237,7 +237,7 @@ export function setupTouchControls({
         setFlags("softDropOn");
         softDropActive = true;
       }
-      gesturedUsed = true;
+      gestureUsed = true;
       e.preventDefault();
     } else {
       if(softDropActive){
@@ -248,16 +248,13 @@ export function setupTouchControls({
   }
 
   function onPointerUp(e){
-    if(getIsGameOver()) return;
     
+    if(getIsGameOver()) return;
     clearTimeout(longPressTimer);
 
     if(doubleTapTriggered){
-
       doubleTapTriggered = false;
-      
     } else {
-      
       const rect = canvas.getBoundingClientRect();
       const endX = e.clientX - rect.left;
       const endY = e.clientY - rect.top;
@@ -265,16 +262,21 @@ export function setupTouchControls({
       const dy = endY - startY;
       const wasSwipe = Math.abs(dx) >= SWIPE_THRESHOLD || Math.abs(dy) >= SWIPE_THRESHOLD;
 
-      if(!gesturedUsed && !wasSwipe && !getIsPaused()){
+      if(!gestureUsed && !wasSwipe && !getIsPaused()){
         let active = getActive();
         const rotated = rotateMatrix(active.shape);
         if(!collides(board, active, active.x, active.y, rotated)){
           active.shape = rotated;
           setActive(active);
         }
-      }
+      };
 
-    }
+      if(softDropActive){
+        setFlags("softDropOff");
+        softDropActive = false;
+      };
+
+    };
 
     // Al soltar se desactiva soft drop (si estaba activo)
     if(softDropActive){
@@ -282,7 +284,7 @@ export function setupTouchControls({
       softDropActive = false;
     }
 
-    gesturedUsed = false;
+    gestureUsed = false;
   }
 
   // Pointer Events: soporta mouse y tactil
