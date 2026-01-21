@@ -138,6 +138,7 @@ export function setupTouchControls({
   let longPressTimer = null;
   let softDropActive = false;
   let gesturedUsed = false;
+  let doubleTapTriggered = false;
   const SWIPE_THRESHOLD = 30;
   const DOUBLE_TAP_MS = 250;
   const LONG_PRESS_MS = 500;
@@ -178,6 +179,7 @@ export function setupTouchControls({
     const now = performance.now();
     if(now - lastTapTime <= DOUBLE_TAP_MS){
       doHardDrop();
+      doubleTapTriggered = true;
       lastTapTime = 0;
       e.preventDefault();
       return;
@@ -250,21 +252,28 @@ export function setupTouchControls({
     
     clearTimeout(longPressTimer);
 
-    const rect = canvas.getBoundingClientRect();
-    const endX = e.clientX - rect.left;
-    const endY = e.clientY - rect.top;
-    const dx = endX - startX;
-    const dy = endY - startY;
+    if(doubleTapTriggered){
 
-    const wasSwipe = Math.abs(dx) >= SWIPE_THRESHOLD || Math.abs(dy) >= SWIPE_THRESHOLD;
+      doubleTapTriggered = false;
+      
+    } else {
+      
+      const rect = canvas.getBoundingClientRect();
+      const endX = e.clientX - rect.left;
+      const endY = e.clientY - rect.top;
+      const dx = endX - startX;
+      const dy = endY - startY;
+      const wasSwipe = Math.abs(dx) >= SWIPE_THRESHOLD || Math.abs(dy) >= SWIPE_THRESHOLD;
 
-    if(!gesturedUsed && !wasSwipe && !getIsPaused()){
-      let active = getActive();
-      const rotated = rotateMatrix(active.shape);
-      if(!collides(board, active, active.x, active.y, rotated)){
-        active.shape = rotated;
-        setActive(active);
+      if(!gesturedUsed && !wasSwipe && !getIsPaused()){
+        let active = getActive();
+        const rotated = rotateMatrix(active.shape);
+        if(!collides(board, active, active.x, active.y, rotated)){
+          active.shape = rotated;
+          setActive(active);
+        }
       }
+
     }
 
     // Al soltar se desactiva soft drop (si estaba activo)
