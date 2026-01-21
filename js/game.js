@@ -4,6 +4,7 @@
 import { TETROMINOS, randomTetromino, spawnPiece } from "./pieces.js";
 import { collides, lockPiece, clearLines } from "./board.js";
 import { clearCanvas, drawBoard, drawPiece, drawHUD, drawNext, drawGameOver, drawPaused } from "./render.js";
+import { setupControls } from "./controls.js";
 
 const COLS = 10;
 const ROWS = 20;
@@ -38,13 +39,6 @@ let score = 0;
 let level = 1;
 let lines = 0;
 
-// Flags: estado del juego
-let isGameOver = false;
-let isPaused = false;
-let isSoftDropping = false;
-
-
-
 // Pieza activa (posición y forma)
 let active = spawnPiece(COLS);
 let next = spawnPiece(COLS);
@@ -53,101 +47,44 @@ let next = spawnPiece(COLS);
 let dropInterval = 500 //ms
 let lastDrop = 0;
 
+// Flags: estado del juego
+let isGameOver = false;
+let isPaused = false;
+let isSoftDropping = false;
 
-// --- Controles --- // -------------------------------------------------
-
-document.addEventListener("keydown", e => {
-
-    const key = e.key.toLowerCase();
-
-    // reset
-    if(isGameOver && key === "r"){
-        resetGame();
-        requestAnimationFrame(update);
-        return;
-    };
-
-    // pause
-    if(key === "p"){
-        isPaused = !isPaused;
-        if(!isPaused){
-            lastDrop = performance.now();
-        }
-        return;
-    };
-
-    if(isPaused || isGameOver) return;
-
-    // controls
-    switch(e.key){
-        case "ArrowLeft":
-            if(!collides(board, active, active.x - 1, active.y)){
-                active.x--;
-            }
+function setFlags(action){
+    switch(action){
+        case "pause":
+            isPaused = !isPaused;
+            if(!isPaused) lastDrop = performance.now();
             break;
-        case "ArrowRight":
-            if(!collides(board, active, active.x + 1, active.y)){
-                active.x++;
-            }
+        case "softDropOn":
+            isSoftDropping = true;
             break;
-        case "ArrowDown":
-            if(!collides(board, active, active.x, active.y + 1)){
-                //active.y++;
-                isSoftDropping = true;
-            }
-            break;
-        case "ArrowUp":
-            const rotated = rotateMatrix(active.shape);
-            if(!collides(board, active, active.x, active.y, rotated)){
-                active.shape = rotated;
-            }
-            break;
-        case " ":
-            hardDrop();
+        case "softDropOff":
+            isSoftDropping = false;
             break;
     }
-});
-
-document.addEventListener('keyup', e => {
-    if(e.key === "ArrowDown"){
-        isSoftDropping = false;
-    }
-});
-
-// ----------------------------------------------------------------------
-
-// Rotación de matriz (función de control)
-function rotateMatrix(matrix){
-    const N = matrix.length;
-    const result = Array.from({ length: N }, () => Array(N).fill(0));
-    for(let r = 0; r < N; r++){
-        for(let c = 0; c < N; c++){
-            result[c][N - 1 - r] = matrix[r][c];
-        }
-    }
-    return result;
 };
 
-// Descenso rápido de la pieza (función de control)
-function hardDrop(){
-    let droppedCells = 0;
-    while(!collides(board, active, active.x, active.y + 1)){
-        active.y++;
-        droppedCells++;
-    }
-    score += droppedCells * 2
-
-    lockPiece(board, active);
-    const cleared = clearLines(board);
-    if(cleared > 0){
-        updateScore(cleared);
-    };
-    active = next;
-    next = spawnPiece(COLS);
-    if(collides(board, active, active.x, active.y)){
-        isGameOver = true;
-    }
-};
+// Controls
+setupControls({
+  board,
+  getActive: () => active,
+  setActive: (val) => { active = val; },
+  getNext: () => next,
+  setNext: (val) => { next = val; },
+  spawnPiece,
+  COLS,
+  getIsGameOver: () => isGameOver,
+  setGameOver: (val) => { isGameOver = val; },
+  getIsPaused: () => isPaused,
+  setFlags,
+  addScore: (val) => { score += val; },
+  updateScore,
+  resetGame,
+  update
+});
 
 
 // --- Actualizar score ---
@@ -165,7 +102,6 @@ function updateScore(cleared){
         }
     }
 }
-
 
 // --- Game Over ---
 function resetGame(){
