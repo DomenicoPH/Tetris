@@ -4,7 +4,7 @@
 import { TETROMINOS, randomTetromino, spawnPiece } from "./pieces.js";
 import { collides, lockPiece, clearLines } from "./board.js";
 import { clearCanvas, drawBoard, drawPiece, drawHUD, drawNext, drawGameOver, drawPaused } from "./render.js";
-import { setupControls } from "./controls.js";
+import { setupControls, setupTouchControls } from "./controls.js";
 
 const COLS = 10;
 const ROWS = 20;
@@ -69,21 +69,38 @@ function setFlags(action){
 
 // Controls
 setupControls({
-  board,
-  getActive: () => active,
-  setActive: (val) => { active = val; },
-  getNext: () => next,
-  setNext: (val) => { next = val; },
-  spawnPiece,
-  COLS,
-  getIsGameOver: () => isGameOver,
-  setGameOver: (val) => { isGameOver = val; },
-  getIsPaused: () => isPaused,
-  setFlags,
-  addScore: (val) => { score += val; },
-  updateScore,
-  resetGame,
-  update
+    board,
+    getActive: () => active,
+    setActive: (val) => { active = val; },
+    getNext: () => next,
+    setNext: (val) => { next = val; },
+    spawnPiece,
+    COLS,
+    getIsGameOver: () => isGameOver,
+    setGameOver: (val) => { isGameOver = val; },
+    getIsPaused: () => isPaused,
+    setFlags,
+    addScore: (val) => { score += val; },
+    updateScore,
+    resetGame,
+    update
+});
+
+setupTouchControls({
+    canvas,
+    board,
+    getActive: () => active,
+    setActive: (val) => { active = val; },
+    getNext: () => next,
+    setNext: (val) => { next = val; },
+    spawnPiece,
+    COLS,
+    getIsGameOver: () => isGameOver,
+    setGameOver: (val) => { isGameOver = val; },
+    getIsPaused: () => isPaused,
+    setFlags,
+    addScore: (val) => { score += val; },
+    updateScore
 });
 
 

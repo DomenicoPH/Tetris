@@ -113,4 +113,167 @@ export function setupControls({
       setFlags("softDropOff");
     }
   });
+};
+
+// --- Controles táctiles ---
+export function setupTouchControls({
+  canvas,
+  board,
+  getActive,
+  setActive,
+  getNext,
+  setNext,
+  spawnPiece,
+  COLS,
+  getIsGameOver,
+  setGameOver,
+  getIsPaused,
+  setFlags,
+  addScore,
+  updateScore,
+}){
+  let startX = 0;
+  let startY = 0;
+  let lastTapTime = 0;
+  let longPressTimer = null;
+  let softDropActive = false;
+  const SWIPE_THRESHOLD = 30;
+  const DOUBLE_TAP_MS = 250;
+  const LONG_PRESS_MS = 500;
+
+  function doHardDrop(){
+    let active = getActive();
+    let next = getNext();
+
+    let droppedCells = 0;
+    while(!collides(board, active, active.x, active.y + 1)){
+      active.y++;
+      droppedCells++;
+    }
+    addScore(droppedCells * 2);
+
+    lockPiece(board, active);
+    const cleared = clearLines(board);
+    if(cleared > 0) updateScore(cleared);
+
+    active = next;
+    next = spawnPiece(COLS);
+    setActive(active);
+    setNext(next);
+
+    if(collides(board, active, active.x, active.y)){
+      setGameOver(true);
+    }
+  };
+
+  function onPointerDown(e){
+    if(getIsGameOver() || getIsPaused()) return;
+
+    const rect = canvas.getBoundingClientRect();
+    startX = e.clientX - rect.left;
+    startY = e.clientY - rect.top;
+
+    // doble toque
+    const now = performance.now();
+    if(now - lastTapTime <= DOUBLE_TAP_MS){
+      doHardDrop();
+      lastTapTime = 0;
+      e.preventDefault();
+      return;
+    }
+    lastTapTime = now;
+
+    // toque largo: Pausa
+    clearTimeout(longPressTimer);
+    longPressTimer = setTimeout(() => {
+      setFlags("pause");
+    }, LONG_PRESS_MS);
+
+    softDropActive = false;
+  };
+
+  function onPointerMove(e){
+    if(getIsGameOver() || getIsPaused()) return;
+
+    const rect = canvas.getBoundingClientRect();
+    
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    const dx = x - startX;
+    const dy = y - startY;
+
+    clearTimeout(longPressTimer);
+
+    let active = getActive();
+
+    // swipe horizontal
+    if(Math.abs(dx) >= SWIPE_THRESHOLD && Math.abs(dx) > Math.abs(dy)){
+      if(dx < 0){
+        if(!collides(board, active, active.x - 1, active.y)){
+          active.x--;
+          setActive(active);
+        }
+      } else {
+        if(!collides(board, active, active.x + 1, active.y)){
+          active.x++;
+          setActive(active);
+        }
+      }
+      startX = x;
+      startY = y;
+      e.preventDefault();
+      return;
+    }
+
+    // swipe vertical
+    if(dy >= SWIPE_THRESHOLD && Math.abs(dy) > Math.abs(dx)){
+      if(!softDropActive){
+        setFlags("softDropOn");
+        softDropActive = true;
+      }
+      e.preventDefault();
+    } else {
+      if(softDropActive){
+        setFlags("softDropOff");
+        softDropActive = false;
+      }
+    }
+  }
+
+  function onPointerUp(e){
+    if(getIsGameOver()) return;
+    
+    clearTimeout(longPressTimer);
+
+    const rect = canvas.getBoundingClientRect();
+    const endX = e.clientX - rect.left;
+    const endY = e.clientY - rect.top;
+    const dx = endX - startX;
+    const dy = endY - startY;
+
+    const wasSwipe = Math.abs(dx) >= SWIPE_THRESHOLD || Math.abs(dy) >= SWIPE_THRESHOLD;
+
+    if(!wasSwipe && !getIsPaused()){
+      let active = getActive();
+      const rotated = rotateMatrix(active.shape);
+      if(!collides(board, active, active.x, active.y, rotated)){
+        active.shape = rotated;
+        setActive(active);
+      }
+    }
+
+    // Al soltar se desactiva soft drop (si estaba activo)
+    if(softDropActive){
+      setFlags("softDropOff");
+      softDropActive = false;
+    }
+  }
+
+  // Pointer Events: soporta mouse y tactil
+  canvas.style.touchAction = "none";
+  canvas.addEventListener("pointerdown", onPointerDown, {passive: false});
+  canvas.addEventListener("pointermove", onPointerMove, {passive: false});
+  canvas.addEventListener("pointerup", onPointerUp, {passive: false});
+  canvas.addEventListener("pointercancel", onPointerUp, {passive: false});
 }
