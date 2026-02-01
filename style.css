@@ -58,7 +58,7 @@ body {
     image-rendering: pixelated;
     image-rendering: crisp-edges;
     border-radius: 15px;
-    border: 5px dashed rgb(240, 185, 35, 0.5);
+    border: 2px solid rgb(255, 255, 255, 0.25);
 }
 
 /* Variable para escalar HUD en pantallas pequeñas */

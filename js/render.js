@@ -1,5 +1,6 @@
 // Utilidades de dibujo
 export function clearCanvas(ctx, BG_COLOR, canvas){
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = BG_COLOR;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 };
@@ -8,7 +9,7 @@ function drawCell(ctx, x, y, id, CELL, COLORS){
     ctx.fillStyle = COLORS[id] || "#FFF";
     ctx.fillRect(x * CELL, y * CELL, CELL, CELL);
     //borde
-    ctx.strokeStyle = "#222";
+    ctx.strokeStyle = "#3a3a3a";
     ctx.strokeRect(x * CELL, y * CELL, CELL, CELL);
 };
 

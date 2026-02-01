@@ -56,7 +56,7 @@ const board = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
 
 // Paleta de colores por ID de pieza
 const COLORS = {
-    0: "#1a1a1a",   // fondo oscuro
+    0: "rgba(26, 26, 26, 0.75)",   // fondo oscuro
     1: "#4dd0e1",   // turquesa suave (I)
     2: "#f9a825",   // amarillo mostaza cálido (O)
     3: "#ab47bc",   // violeta pastel (T)
@@ -67,8 +67,8 @@ const COLORS = {
 };
 
 // Color de fondo
-const BG_COLOR = "#181818"
-const TEXT_COLOR = "rgb(108, 69, 109)";
+const BG_COLOR = "rgba(26, 26, 26, 0.75)"
+const TEXT_COLOR = "rgb(170, 170, 170)";
 const NUMBER_COLOR = "rgb(255, 255, 255)";
 
 // Score
