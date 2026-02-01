@@ -33,27 +33,63 @@ export function drawPiece(ctx, piece, CELL, COLORS){
 };
 
 // --- Mostrar score y level ---
-export function drawHUD(ctx, TEXT_COLOR, score, level, lines){
+export function drawHUD(ctx, TEXT_COLOR, NUMBER_COLOR, score, level, lines){
+    ctx.font = "9px 'Press Start 2P'";
+    
     ctx.fillStyle = TEXT_COLOR;
-    ctx.font = "12px 'Press Start 2P'";
-    ctx.fillText(`Score: ${score}`, 310, 25);
-    ctx.fillText(`Level: ${level}`, 310, 50);
-    ctx.fillText(`Lines: ${lines}`, 310, 75);
+    ctx.fillText(`SCORE:`, 310, 25);
+    
+    ctx.fillStyle = NUMBER_COLOR;
+    ctx.fillText(score, 310, 50);
+    
+    ctx.fillStyle = TEXT_COLOR;
+    ctx.fillText(`LEVEL:`, 310, 75);
+    
+    ctx.fillStyle = NUMBER_COLOR;
+    ctx.fillText(level, 310, 100);
+    
+    ctx.fillStyle = TEXT_COLOR;
+    ctx.fillText(`LINES:`, 310, 125);
+
+    ctx.fillStyle = NUMBER_COLOR;
+    ctx.fillText(lines, 310, 150);
 };
 
 // --- Dibujar próxima pieza ---
+// --- Dibujar próxima pieza ---
 export function drawNext(ctx, next, CELL, COLORS, TEXT_COLOR){
-    ctx.fillStyle = TEXT_COLOR;
-    ctx.font = "12px 'Press Start 2P'";
-    ctx.fillText("Next:", 310, 110);
-
+    const SCALE_FACTOR = 0.7; // 70% del tamaño original
+    const SMALL_CELL = CELL * SCALE_FACTOR;
+    
     const { shape, id } = next;
-    const offsetX = Math.floor(315 / CELL);
-    const offsetY = 5;
+    
+    // Calcular posición centrada en el área derecha (310-450px)
+    const nextAreaWidth = 140; // 450-310
+    const pieceWidth = shape[0].length * SMALL_CELL;
+    
+    //const offsetX = 310 + (nextAreaWidth - pieceWidth) / 2; // Centrado horizontal
+    const offsetX = 310;
+    const offsetY = 180; // Posición vertical fija
+    
+    // Dibujar cada celda escalada
     for(let r = 0; r < shape.length; r++){
         for(let c = 0; c < shape[r].length; c++){
             if(shape[r][c]){
-                drawCell(ctx, offsetX + c, offsetY + r, id, CELL, COLORS);
+                ctx.fillStyle = COLORS[id] || "#FFF";
+                ctx.fillRect(
+                    offsetX + c * SMALL_CELL, 
+                    offsetY + r * SMALL_CELL, 
+                    SMALL_CELL, 
+                    SMALL_CELL
+                );
+                // Borde
+                ctx.strokeStyle = "#222";
+                ctx.strokeRect(
+                    offsetX + c * SMALL_CELL, 
+                    offsetY + r * SMALL_CELL, 
+                    SMALL_CELL, 
+                    SMALL_CELL
+                );
             }
         }
     }

@@ -32,7 +32,8 @@ const COLORS = {
 
 // Color de fondo
 const BG_COLOR = "#000"
-const TEXT_COLOR = "#8d8d8d"
+const TEXT_COLOR = "rgb(150,0,155)";
+const NUMBER_COLOR = "rgb(255, 255, 255)";
 
 // Score
 let score = 0;
@@ -149,7 +150,7 @@ function update(timestamp){
     clearCanvas(ctx, BG_COLOR, canvas);
     drawBoard(ctx, board, CELL, COLORS);
     drawPiece(ctx, active, CELL, COLORS);
-    drawHUD(ctx, TEXT_COLOR, score, level, lines);
+    drawHUD(ctx, TEXT_COLOR, NUMBER_COLOR, score, level, lines);
     drawNext(ctx, next, CELL, COLORS, TEXT_COLOR);
     
     // Si Game Over...
