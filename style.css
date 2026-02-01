@@ -2,11 +2,23 @@ body{
     background-color: rgb(40, 40, 40);
 }
 
-.title{
+.title-container {
+    display: flex;
+    align-items: center;
+    gap: 25px;    
+}
+
+.title,
+.coded-by {
     font-family: "Press Start 2P";
-    font-size: 2.5rem;
+    font-size: 1rem;
     padding: 10px 0px;
     margin: 0;
     text-align: left;
-    color: #8d8d8d;
+    color: #464646;
+}
+
+.coded-by{
+    font-size: .75rem;
+    font-style: italic;
 }

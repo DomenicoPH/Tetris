@@ -34,31 +34,31 @@ export function drawPiece(ctx, piece, CELL, COLORS){
 
 // --- Mostrar score y level ---
 export function drawHUD(ctx, TEXT_COLOR, NUMBER_COLOR, score, level, lines){
-    ctx.font = "9px 'Press Start 2P'";
+    ctx.font = "8px 'Press Start 2P'";
     
     ctx.fillStyle = TEXT_COLOR;
-    ctx.fillText(`SCORE:`, 310, 25);
+    ctx.fillText(`SCORE`, 310, 25);
     
     ctx.fillStyle = NUMBER_COLOR;
-    ctx.fillText(score, 310, 50);
+    ctx.fillText(score, 310, 45);
     
     ctx.fillStyle = TEXT_COLOR;
-    ctx.fillText(`LEVEL:`, 310, 75);
+    ctx.fillText(`LEVEL`, 310, 65);
     
     ctx.fillStyle = NUMBER_COLOR;
-    ctx.fillText(level, 310, 100);
+    ctx.fillText(level, 310, 85);
     
     ctx.fillStyle = TEXT_COLOR;
-    ctx.fillText(`LINES:`, 310, 125);
+    ctx.fillText(`LINES`, 310, 105);
 
     ctx.fillStyle = NUMBER_COLOR;
-    ctx.fillText(lines, 310, 150);
+    ctx.fillText(lines, 310, 125);
 };
 
 // --- Dibujar próxima pieza ---
 // --- Dibujar próxima pieza ---
 export function drawNext(ctx, next, CELL, COLORS, TEXT_COLOR){
-    const SCALE_FACTOR = 0.7; // 70% del tamaño original
+    const SCALE_FACTOR = 0.4; // 40% del tamaño original
     const SMALL_CELL = CELL * SCALE_FACTOR;
     
     const { shape, id } = next;
@@ -68,8 +68,8 @@ export function drawNext(ctx, next, CELL, COLORS, TEXT_COLOR){
     const pieceWidth = shape[0].length * SMALL_CELL;
     
     //const offsetX = 310 + (nextAreaWidth - pieceWidth) / 2; // Centrado horizontal
-    const offsetX = 310;
-    const offsetY = 180; // Posición vertical fija
+    const offsetX = 305;
+    const offsetY = 145; // Posición vertical fija
     
     // Dibujar cada celda escalada
     for(let r = 0; r < shape.length; r++){

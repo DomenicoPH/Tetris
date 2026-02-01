@@ -31,8 +31,8 @@ const COLORS = {
 };
 
 // Color de fondo
-const BG_COLOR = "#000"
-const TEXT_COLOR = "rgb(150,0,155)";
+const BG_COLOR = "#181818"
+const TEXT_COLOR = "rgb(108, 69, 109)";
 const NUMBER_COLOR = "rgb(255, 255, 255)";
 
 // Score
