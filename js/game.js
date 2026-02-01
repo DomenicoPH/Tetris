@@ -15,6 +15,42 @@ const CELL = 30;
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
+// Nuevo: Tamaño base interno (igual que en HTML)
+const BASE_WIDTH = 360;
+const BASE_HEIGHT = 600;
+
+// Nuevo: Función para escalar canvas
+function resizeCanvas() {
+    // Usar el contenedor body o calcular según viewport
+    const maxWidth = window.innerWidth * 0.95; // 95% del ancho disponible
+    const maxHeight = window.innerHeight * 0.75; // 75% del alto disponible
+    
+    // Calcular escala manteniendo proporción 360:600 = 3:5
+    const scaleWidth = maxWidth / BASE_WIDTH;
+    const scaleHeight = maxHeight / BASE_HEIGHT;
+    const scale = Math.min(scaleWidth, scaleHeight);
+    
+    // Aplicar escala visual manteniendo el buffer interno
+    canvas.style.width = `${BASE_WIDTH * scale}px`;
+    canvas.style.height = `${BASE_HEIGHT * scale}px`;
+    
+    // Centrar canvas
+    canvas.style.display = 'block';
+    canvas.style.margin = '0 auto';
+    
+    // Para pantallas muy pequeñas, ajustar tamaño de fuente en HUD
+    const hudScale = scale < 0.8 ? scale : 1;
+    document.documentElement.style.setProperty('--hud-scale', hudScale);
+}
+
+// Llamar al cargar y cuando cambie tamaño/orientación
+resizeCanvas();
+window.addEventListener('load', resizeCanvas);
+window.addEventListener('resize', resizeCanvas);
+window.addEventListener('orientationchange', () => {
+    setTimeout(resizeCanvas, 100); // Pequeño delay para que termine la rotación
+});
+
 // Tablero 0 = vacío, >0 = color/ID de pieza
 const board = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
 
